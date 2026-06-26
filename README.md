@@ -7,7 +7,8 @@ originally developed for warhammer 40k inquisitor but use with any reshade insta
 new ! noosphere work in progress not published yet
 <img width="2304" height="648" alt="image" src="https://github.com/user-attachments/assets/7a1f4f98-6b05-4adc-b105-e268341ca8a8" />
 
-
+video of 3 shaders in action:
+https://www.youtube.com/watch?v=42Hp_9JzHyo
 
 
 NEW! astra and cog
