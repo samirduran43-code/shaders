@@ -4,6 +4,11 @@ useful  shader for reshade
 originally developed for warhammer 40k inquisitor
 -use DownsampleSSAO for better look and Colors or ColorMatrix
 
+industrial:
+<img width="2304" height="648" alt="image" src="https://github.com/user-attachments/assets/4a94198f-0720-4139-a076-061c529ad329" />
+
+
+
 inq2shader:
 <img width="2304" height="648" alt="showshader" src="https://github.com/user-attachments/assets/ecbd53bd-47f6-4cf5-a376-b624d95cf49d" />
 
