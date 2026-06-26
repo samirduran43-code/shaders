@@ -1,7 +1,7 @@
 # shaders and UI
 useful  shader for reshade
 
-originally developed for warhammer 40k inquisitor
+originally developed for warhammer 40k inquisitor but use with any reshade install
 -use DownsampleSSAO for better look and Colors or ColorMatrix
 
 NEW! astra and cog
