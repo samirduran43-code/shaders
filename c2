@@ -18,21 +18,51 @@ float hash11(float p)
     return frac(p);
 }
 
+// Procedural Glyphs Engine (Generates mixed Latin, Cyrillic shards, and dots)
+float drawSciFiCrypto(float2 uv, float seed)
+{
+    float charSeed = hash11(seed);
+    float2 f = frac(uv);
+    
+    if (charSeed < 0.35) 
+    {
+        // TYPE A: Simple tracking separation dots (.)
+        float distToDot = distance(f, float2(0.5, 0.25));
+        return step(distToDot, 0.12);
+    }
+    else if (charSeed < 0.70)
+    {
+        // TYPE B: Smallcase Latin Cuts (Geometric crosses, loops, and hooks)
+        float horizontalBar = step(0.2, f.x) * step(f.x, 0.8) * step(abs(f.y - 0.45), 0.08);
+        float verticalStem = step(abs(f.x - 0.5), 0.08) * step(0.2, f.y) * step(f.y, 0.7);
+        float bottomHook = step(0.2, f.x) * step(f.x, 0.5) * step(abs(f.y - 0.2), 0.08);
+        return saturate(horizontalBar + verticalStem + bottomHook);
+    }
+    else 
+    {
+        // TYPE C: Cyrillic-Style Geometric Shards
+        float leftPillar = step(abs(f.x - 0.25), 0.08) * step(0.2, f.y) * step(f.y, 0.7);
+        float rightPillar = step(abs(f.x - 0.75), 0.08) * step(0.2, f.y) * step(f.y, 0.7);
+        float centerBar = step(0.25, f.x) * step(f.x, 0.75) * step(abs(f.y - 0.45), 0.08);
+        float bottomTail = step(abs(f.x - 0.75), 0.08) * step(0.05, f.y) * step(f.y, 0.2);
+        return saturate(leftPillar + rightPillar + centerBar + bottomTail);
+    }
+}
+
 // 2. Pixel Shader Pass
-float4 PS_MechanicusOverhaulWidget(float4 position : SV_Position, float2 texcoord : TEXCOORD) : SV_Target
+float4 PS_MechanicusCryptoWidget(float4 position : SV_Position, float2 texcoord : TEXCOORD) : SV_Target
 {
     float4 baseColor = tex2D(ReShade::BackBuffer, texcoord);
     float2 pixelPos = texcoord * float2(BUFFER_WIDTH, BUFFER_HEIGHT);
     
     float time = CustomTimer * 0.001;
 
-    // --- ENHANCED ENGINE TIMERS ---
+    // --- TIMERS ---
     float timeStepFast = floor(time * 14.0); 
     float timeStepSlow = floor(time * 4.0);
+    float cryptoClock  = floor(time * 6.0); 
     float randomVal = hash11(timeStepFast);
-    float randomValSlow = hash11(timeStepSlow);
     
-    // Heavy engine hydraulic compression tremor
     float vibration = 0.0;
     if (randomVal > 0.88) 
     {
@@ -42,112 +72,97 @@ float4 PS_MechanicusOverhaulWidget(float4 position : SV_Position, float2 texcoor
     float2 widgetCenter = float2(BUFFER_WIDTH - 400.0, 230.0 + vibration);
     float boxRadius = 140.0;
 
-    // Strict box culling for framework performance
+    // Main structural coordinate window check
     if (pixelPos.x > widgetCenter.x - boxRadius * 1.5 && pixelPos.x < widgetCenter.x + boxRadius * 1.5 &&
-        pixelPos.y > widgetCenter.y - boxRadius * 1.9 && pixelPos.y < widgetCenter.y + boxRadius * 1.9)
+        pixelPos.y > widgetCenter.y - boxRadius * 1.9 && pixelPos.y < widgetCenter.y + boxRadius * 2.5)
     {
-        // Color Engine: Industrial Amber shifting to Overload Copper-Red
         float3 machineColor = float3(1.0, 0.52, 0.0); 
-        if (SystemLoad > 0.8 && sin(time * 20.0) > 0.0) 
-        {
-            machineColor = float3(1.0, 0.15, 0.0);
-        }
+        if (SystemLoad > 0.8 && sin(time * 20.0) > 0.0) machineColor = float3(1.0, 0.15, 0.0);
 
         float2 p = (pixelPos - widgetCenter) / boxRadius;
         float mask = 0.0;
 
-        // --- LAYER A: INTERLOCKING DUAL-STAGE GEAR MECHANISM (Upper Section) ---
+        // --- LAYER A: INTERLOCKING DUAL-STAGE GEAR MECHANISM ---
         float2 pCog = p - float2(0.0, -0.22);
         float rCog = length(pCog);
-        
         if (rCog < 0.85)
         {
-            // Primary Clockwise Outer Cog Ring
             float angleOuter = time * 0.6;
             float thetaOuter = atan2(pCog.y, pCog.x) + angleOuter;
-            float teethOuter = step(0.0, sin(thetaOuter * 16.0)); // 16 Heavy teeth
+            float teethOuter = step(0.0, sin(thetaOuter * 16.0));
             float outerProfile = 0.52 + (teethOuter * 0.06);
             float outerCogBody = step(rCog, outerProfile) * step(0.44, rCog);
 
-            // Secondary Counter-Clockwise Inner Planetary Gear
             float angleInner = -time * 1.4;
             float thetaInner = atan2(pCog.y, pCog.x) + angleInner;
-            float teethInner = step(0.0, sin(thetaInner * 10.0)); // 10 Compact teeth
+            float teethInner = step(0.0, sin(thetaInner * 10.0));
             float innerProfile = 0.24 + (teethInner * 0.04);
             float innerCogBody = step(rCog, innerProfile) * step(0.14, rCog);
             
-            // Heavy internal structural cross-bracing rivets
             float cosI = cos(angleInner); float sinI = sin(angleInner);
             float2 rotInnerP = float2(pCog.x * cosI - pCog.y * sinI, pCog.x * sinI + pCog.y * cosI);
-            float coreSpokes = step(abs(rotInnerP.x), 0.02) + step(abs(rotInnerP.y), 0.02);
-            coreSpokes *= step(rCog, 0.14);
+            float coreSpokes = step(abs(rotInnerP.x), 0.02) + step(abs(rotInnerP.y), 0.02) * step(rCog, 0.14);
 
-            // Sub-surface calibration tick ring nestled between the gears
             float calibrationRing = step(abs(rCog - 0.35), 0.005) * step(0.3, frac(thetaOuter * 2.5));
-
             mask = max(mask, outerCogBody + innerCogBody + coreSpokes + calibrationRing);
         }
 
-        // --- LAYER B: SYSTEM CALIBRATION MARGINS (Hazard Framing) ---
-        // Industrial perimeter tracking borders
+        // --- LAYER B: SYSTEM CALIBRATION MARGINS (Borders) ---
         float2 absP = abs(p);
-        
-        // Solid mechanical corner brackets with status cutouts
         float cornerBrackets = step(0.92, max(absP.x, absP.y * 0.75)) * step(max(absP.x, absP.y * 0.75), 0.96);
         float cornerCutout = step(0.68, min(absP.x, absP.y * 0.75));
         float combinedCorners = cornerBrackets * cornerCutout;
-        
-        // Blink status blocks on the corners based on slow engine calculations
-        if (combinedCorners > 0.0 && p.x > 0.7 && p.y < -0.7)
-        {
-            combinedCorners *= step(0.4, hash11(timeStepSlow)); // Status lamp flicker
-        }
+        if (combinedCorners > 0.0 && p.x > 0.7 && p.y < -0.7) combinedCorners *= step(0.4, hash11(timeStepSlow));
         mask = max(mask, combinedCorners);
 
-        // Animated Right Flank Hazard Strips with framing border walls
         if (p.x > 0.82 && p.x < 0.90 && p.y > -0.7 && p.y < 1.1)
         {
             float stripes = step(0.5, frac((p.x + p.y * 1.5) * 3.5 - time * 2.2));
             mask = max(mask, stripes * 0.85);
         }
 
-        // --- LAYER C: DUAL-AXIS TELEMETRY DATA GRAPHS (Lower Section) ---
+        // --- LAYER C: DUAL-AXIS TELEMETRY DATA GRAPHS ---
         float2 pBars = p - float2(0.0, 0.62);
         if (abs(pBars.x) < 0.75 && abs(pBars.y) < 0.28)
         {
-            // Grid array partitioning for 6 data modules
             float barID = floor((pBars.x + 0.75) / 0.25);
             float barFraction = frac((pBars.x + 0.75) / 0.25);
             float columnGapMask = step(0.12, barFraction) * step(barFraction, 0.88);
             
-            // Advanced continuous math reading log waveforms
             float waveValue = sin(barID * 45.12 + time * 6.0) * cos(barID * 12.7 + time * 2.3);
             waveValue = (waveValue * 0.35 + 0.45) * (SystemLoad * 0.7 + 0.4);
             
             float normalizedY = (pBars.y + 0.28) / 0.56;
-            
-            // Build segmented data ladders
             float diagnosticFill = step(normalizedY, waveValue);
             float matrixSegments = step(0.22, frac(normalizedY * 14.0));
-            float technicalBars = diagnosticFill * columnGapMask * matrixSegments;
             
-            // Baseline hardware threshold guidelines running behind the charts
             float thresholdLine = step(abs(normalizedY - 0.75), 0.008) * step(0.4, frac(pBars.x * 20.0));
-            mask = max(mask, technicalBars + (thresholdLine * 0.25));
+            mask = max(mask, (diagnosticFill * columnGapMask * matrixSegments) + (thresholdLine * 0.25));
         }
 
-        // --- LAYER D: AXIAL ORIENTATION CROSSHAIRS ---
-        // Precise instrumentation measuring lines tracking the inner planetary machinery
+        // --- LAYER D: FIXED CYRILLIC/LATIN CRYPTO TEXT FIELD ---
+        float2 pCrypto = p - float2(0.0, 1.12); 
+        if (abs(pCrypto.x) < 0.70 && abs(pCrypto.y) < 0.08)
+        {
+            float colIndex = floor((pCrypto.x + 0.70) / 0.07);
+            float2 cryptoCellUV = float2(frac((pCrypto.x + 0.70) / 0.07), (pCrypto.y + 0.08) / 0.16);
+            
+            float variableGlyphSeed = colIndex * 73.84 + cryptoClock;
+            float textGlyph = drawSciFiCrypto(cryptoCellUV, variableGlyphSeed);
+            
+            float subLine = step(abs(pCrypto.y - 0.07), 0.005) * step(0.2, frac(pCrypto.x * 35.0));
+
+            mask = max(mask, textGlyph * 0.95 + (subLine * 0.4));
+        }
+
+        // --- LAYER E: AXIAL ORIENTATION CROSSHAIRS ---
         float crosshairLength = step(abs(p.x), 0.004) * (step(abs(p.y + 0.22), 0.95) * step(0.58, abs(p.y + 0.22)));
-        crosshairLength += step(abs(p.y + 0.22), 0.004) * (step(abs(p.x), 0.95) * step(0.58, abs(p.x)));
+        crosshairLength += step(abs(p.y + 0.22), 0.004) * (step(abs(p.x), 0.95) * step(0.58, abs(p.x))); // Fixed 'x' to 'p.x' here
         mask = max(mask, crosshairLength);
 
-        // --- INDUSTRIAL CRT SCREEN PASS ---
-        // High density vertical dot structure raster
+        // --- MONITOR SCANLINE FILTERS ---
         float scanline = sin(pixelPos.y * 2.2) * 0.18 + 0.82;
         float phosphorglow = cos(pixelPos.x * 2.2) * 0.08 + 0.92;
-        
-        // Micro-flicker current drop tracking
         float noiseFlicker = 0.94 + (hash11(time * 45.0) * 0.06);
 
         float3 finalColor = machineColor * mask * scanline * phosphorglow * noiseFlicker;
@@ -158,11 +173,11 @@ float4 PS_MechanicusOverhaulWidget(float4 position : SV_Position, float2 texcoor
 }
 
 // Technique wrapper
-technique MechanicusOverhauledWidget
+technique MechanicusCryptoOverhaul
 {
     pass
     {
         VertexShader = PostProcessVS;
-        PixelShader = PS_MechanicusOverhaulWidget;
+        PixelShader = PS_MechanicusCryptoWidget;
     }
 }
