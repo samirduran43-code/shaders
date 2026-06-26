@@ -10,6 +10,10 @@ inq2shader:
 blue thermal (instead of standard red)
 <img width="2304" height="648" alt="image" src="https://github.com/user-attachments/assets/24085dea-d446-478a-a495-97672fbc5693" />
 
+blue thermal enemies:
+<img width="2304" height="648" alt="image" src="https://github.com/user-attachments/assets/0d5dadcd-5d68-4039-8a9d-2360ca1ad0d6" />
+
+
 correct color matrix for blue thermal:
 
 
