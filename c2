@@ -18,7 +18,7 @@ float hash11(float p)
     return frac(p);
 }
 
-// Procedural Glyphs Engine (Generates mixed Latin, Cyrillic shards, and dots)
+// Procedural Glyphs Engine
 float drawSciFiCrypto(float2 uv, float seed)
 {
     float charSeed = hash11(seed);
@@ -26,13 +26,11 @@ float drawSciFiCrypto(float2 uv, float seed)
     
     if (charSeed < 0.35) 
     {
-        // TYPE A: Simple tracking separation dots (.)
         float distToDot = distance(f, float2(0.5, 0.25));
         return step(distToDot, 0.12);
     }
     else if (charSeed < 0.70)
     {
-        // TYPE B: Smallcase Latin Cuts (Geometric crosses, loops, and hooks)
         float horizontalBar = step(0.2, f.x) * step(f.x, 0.8) * step(abs(f.y - 0.45), 0.08);
         float verticalStem = step(abs(f.x - 0.5), 0.08) * step(0.2, f.y) * step(f.y, 0.7);
         float bottomHook = step(0.2, f.x) * step(f.x, 0.5) * step(abs(f.y - 0.2), 0.08);
@@ -40,7 +38,6 @@ float drawSciFiCrypto(float2 uv, float seed)
     }
     else 
     {
-        // TYPE C: Cyrillic-Style Geometric Shards
         float leftPillar = step(abs(f.x - 0.25), 0.08) * step(0.2, f.y) * step(f.y, 0.7);
         float rightPillar = step(abs(f.x - 0.75), 0.08) * step(0.2, f.y) * step(f.y, 0.7);
         float centerBar = step(0.25, f.x) * step(f.x, 0.75) * step(abs(f.y - 0.45), 0.08);
@@ -122,23 +119,46 @@ float4 PS_MechanicusCryptoWidget(float4 position : SV_Position, float2 texcoord 
             mask = max(mask, stripes * 0.85);
         }
 
-        // --- LAYER C: DUAL-AXIS TELEMETRY DATA GRAPHS ---
+        // --- LAYER C: TRUE CHAOTIC JITTER TELEMETRY GRAPHS ---
         float2 pBars = p - float2(0.0, 0.62);
         if (abs(pBars.x) < 0.75 && abs(pBars.y) < 0.28)
         {
             float barID = floor((pBars.x + 0.75) / 0.25);
             float barFraction = frac((pBars.x + 0.75) / 0.25);
-            float columnGapMask = step(0.12, barFraction) * step(barFraction, 0.88);
             
-            float waveValue = sin(barID * 45.12 + time * 6.0) * cos(barID * 12.7 + time * 2.3);
-            waveValue = (waveValue * 0.35 + 0.45) * (SystemLoad * 0.7 + 0.4);
+            float columnArea = step(0.12, barFraction) * step(barFraction, 0.88);
+            
+            float frameBorderX = step(abs(barFraction - 0.5), 0.38) * step(0.34, abs(barFraction - 0.5));
+            float frameBorderY = step(abs(pBars.y), 0.28) * step(0.25, abs(pBars.y));
+            float channelOuterFrame = saturate(frameBorderX + frameBorderY) * columnArea;
+
+            // --- TRUE CHAOTIC JITTER ENGINE ---
+            // 1. Establish two rapid, desynchronized step clocks
+            float jitterTime1 = floor(time * 9.0 + barID * 3.14);
+            float jitterTime2 = floor(time * 15.0 - barID * 1.73);
+            
+            // 2. Generate random targets based on those distinct time frames
+            float targetNoise1 = hash11(jitterTime1);
+            float targetNoise2 = hash11(jitterTime2 + 55.4);
+            
+            // 3. Blend them together with fractional time to get unpredictable jumps 
+            // instead of a smooth geometric rolling wave loop
+            float rawJitter = lerp(targetNoise1, targetNoise2, frac(time * 5.0));
+            
+            // 4. Force a non-linear spike curve on the final variable
+            float finalJitter = pow(rawJitter, 2.0);
+            float waveValue = (finalJitter * 0.85) * (SystemLoad * 0.7 + 0.3);
             
             float normalizedY = (pBars.y + 0.28) / 0.56;
-            float diagnosticFill = step(normalizedY, waveValue);
-            float matrixSegments = step(0.22, frac(normalizedY * 14.0));
             
+            // Run inverted cut spacing tracking
+            float negativeSpaceCut = step(normalizedY, 1.0 - waveValue);
+            float matrixSegments = step(0.22, frac(normalizedY * 14.0));
+            float technicalBars = saturate(columnArea - negativeSpaceCut) * matrixSegments;
+
             float thresholdLine = step(abs(normalizedY - 0.75), 0.008) * step(0.4, frac(pBars.x * 20.0));
-            mask = max(mask, (diagnosticFill * columnGapMask * matrixSegments) + (thresholdLine * 0.25));
+            
+            mask = max(mask, technicalBars + channelOuterFrame + (thresholdLine * 0.25));
         }
 
         // --- LAYER D: INTERLOCKING STATUS SEGMENT GRID ---
@@ -189,7 +209,7 @@ float4 PS_MechanicusCryptoWidget(float4 position : SV_Position, float2 texcoord 
     return baseColor;
 }
 
-// 3. Technique Wrapper Setup (Fixed typos here)
+// 3. Technique Wrapper Setup
 technique MechanicusCryptoOverhaul
 {
     pass
