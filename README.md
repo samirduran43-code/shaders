@@ -4,7 +4,7 @@ useful  shader for reshade
 originally developed for warhammer 40k inquisitor but use with any reshade install
 -use DownsampleSSAO for better look and Colors or ColorMatrix
 
-new ! noosphere work in progress not published yet
+new ! noosphere work in progress (first 1.0 ver published in noo.fx)
 <img width="2304" height="648" alt="image" src="https://github.com/user-attachments/assets/7a1f4f98-6b05-4adc-b105-e268341ca8a8" />
 
 ![til](./cog.gif)
