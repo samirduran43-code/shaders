@@ -61,6 +61,7 @@ float4 PS_MechanicusCryptoWidget(float4 position : SV_Position, float2 texcoord 
     float timeStepFast = floor(time * 14.0); 
     float timeStepSlow = floor(time * 4.0);
     float cryptoClock  = floor(time * 6.0); 
+    float bufferClock  = floor(time * 10.0); 
     float randomVal = hash11(timeStepFast);
     
     float vibration = 0.0;
@@ -74,7 +75,7 @@ float4 PS_MechanicusCryptoWidget(float4 position : SV_Position, float2 texcoord 
 
     // Main structural coordinate window check
     if (pixelPos.x > widgetCenter.x - boxRadius * 1.5 && pixelPos.x < widgetCenter.x + boxRadius * 1.5 &&
-        pixelPos.y > widgetCenter.y - boxRadius * 1.9 && pixelPos.y < widgetCenter.y + boxRadius * 2.5)
+        pixelPos.y > widgetCenter.y - boxRadius * 1.9 && pixelPos.y < widgetCenter.y + boxRadius * 2.6)
     {
         float3 machineColor = float3(1.0, 0.52, 0.0); 
         if (SystemLoad > 0.8 && sin(time * 20.0) > 0.0) machineColor = float3(1.0, 0.15, 0.0);
@@ -140,8 +141,24 @@ float4 PS_MechanicusCryptoWidget(float4 position : SV_Position, float2 texcoord 
             mask = max(mask, (diagnosticFill * columnGapMask * matrixSegments) + (thresholdLine * 0.25));
         }
 
-        // --- LAYER D: FIXED CYRILLIC/LATIN CRYPTO TEXT FIELD ---
-        float2 pCrypto = p - float2(0.0, 1.12); 
+        // --- LAYER D: INTERLOCKING STATUS SEGMENT GRID ---
+        float2 pGap = p - float2(0.0, 0.96); 
+        if (abs(pGap.x) < 0.72 && abs(pGap.y) < 0.03)
+        {
+            float segmentCount = 16.0;
+            float blockID = floor((pGap.x + 0.72) / (1.44 / segmentCount));
+            float blockFrac = frac((pGap.x + 0.72) / (1.44 / segmentCount));
+            
+            float blockSpacing = step(0.15, blockFrac) * step(blockFrac, 0.85);
+            float travelingPulse = step(abs(blockID - frac(time * 0.4) * segmentCount), 1.5);
+            float blockGlitch = step(0.25, hash11(blockID + bufferClock));
+            
+            float finalBlockLine = blockSpacing * saturate(travelingPulse * 0.9 + 0.2) * blockGlitch;
+            mask = max(mask, finalBlockLine * 0.8);
+        }
+
+        // --- LAYER E: FIXED CYRILLIC/LATIN CRYPTO TEXT FIELD ---
+        float2 pCrypto = p - float2(0.0, 1.14); 
         if (abs(pCrypto.x) < 0.70 && abs(pCrypto.y) < 0.08)
         {
             float colIndex = floor((pCrypto.x + 0.70) / 0.07);
@@ -155,9 +172,9 @@ float4 PS_MechanicusCryptoWidget(float4 position : SV_Position, float2 texcoord 
             mask = max(mask, textGlyph * 0.95 + (subLine * 0.4));
         }
 
-        // --- LAYER E: AXIAL ORIENTATION CROSSHAIRS ---
+        // --- LAYER F: AXIAL ORIENTATION CROSSHAIRS ---
         float crosshairLength = step(abs(p.x), 0.004) * (step(abs(p.y + 0.22), 0.95) * step(0.58, abs(p.y + 0.22)));
-        crosshairLength += step(abs(p.y + 0.22), 0.004) * (step(abs(p.x), 0.95) * step(0.58, abs(p.x))); // Fixed 'x' to 'p.x' here
+        crosshairLength += step(abs(p.y + 0.22), 0.004) * (step(abs(p.x), 0.95) * step(0.58, abs(p.x)));
         mask = max(mask, crosshairLength);
 
         // --- MONITOR SCANLINE FILTERS ---
@@ -172,7 +189,7 @@ float4 PS_MechanicusCryptoWidget(float4 position : SV_Position, float2 texcoord 
     return baseColor;
 }
 
-// Technique wrapper
+// 3. Technique Wrapper Setup (Fixed typos here)
 technique MechanicusCryptoOverhaul
 {
     pass
