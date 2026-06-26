@@ -4,6 +4,11 @@ useful  shader for reshade
 originally developed for warhammer 40k inquisitor
 -use DownsampleSSAO for better look and Colors or ColorMatrix
 
+NEW! astra and cog
+<img width="2304" height="648" alt="image" src="https://github.com/user-attachments/assets/c9791ae0-451a-4b34-87d3-83676ff7e2eb" />
+
+
+
 industrial:
 <img width="2304" height="648" alt="image" src="https://github.com/user-attachments/assets/4a94198f-0720-4139-a076-061c529ad329" />
 
