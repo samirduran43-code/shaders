@@ -10,6 +10,9 @@ industrial:
 (psyker.fx - animated)
 <img width="461" height="309" alt="image" src="https://github.com/user-attachments/assets/624b6fbe-f476-491c-bf57-221c032cfdf6" />
 
+discojesus gif
+<img width="594" height="334" alt="image" src="https://github.com/user-attachments/assets/347c56f5-f618-43f9-b5a7-a6ed1aad24d4" />
+
 
 inq2shader:
 <img width="2304" height="648" alt="showshader" src="https://github.com/user-attachments/assets/ecbd53bd-47f6-4cf5-a376-b624d95cf49d" />
