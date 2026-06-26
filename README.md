@@ -4,6 +4,12 @@ useful  shader for reshade
 originally developed for warhammer 40k inquisitor but use with any reshade install
 -use DownsampleSSAO for better look and Colors or ColorMatrix
 
+new ! noosphere work in progress not published yet
+<img width="2304" height="648" alt="image" src="https://github.com/user-attachments/assets/7a1f4f98-6b05-4adc-b105-e268341ca8a8" />
+
+
+
+
 NEW! astra and cog
 <img width="2304" height="648" alt="image" src="https://github.com/user-attachments/assets/c9791ae0-451a-4b34-87d3-83676ff7e2eb" />
 
