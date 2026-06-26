@@ -7,6 +7,8 @@ originally developed for warhammer 40k inquisitor
 industrial:
 <img width="2304" height="648" alt="image" src="https://github.com/user-attachments/assets/4a94198f-0720-4139-a076-061c529ad329" />
 
+(psyker.fx - animated)
+<img width="461" height="309" alt="image" src="https://github.com/user-attachments/assets/624b6fbe-f476-491c-bf57-221c032cfdf6" />
 
 
 inq2shader:
