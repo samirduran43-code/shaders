@@ -11,7 +11,7 @@ industrial:
 <img width="461" height="309" alt="image" src="https://github.com/user-attachments/assets/624b6fbe-f476-491c-bf57-221c032cfdf6" />
 
 discojesus gif
-![til](./discojesus.png)
+![til](./discojesus.gif)
 
 
 inq2shader:
