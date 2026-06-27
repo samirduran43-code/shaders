@@ -70,10 +70,10 @@ float4 PS_NoosphereOverlay(float4 vpos : SV_Position, float2 texcoord : TEXCOORD
     if (lineV < 0.03) pattern += 0.4;
 
     // --- Aligned Coordinate Configuration ---
-    float2 w1_Min = float2(0.104, 0.1575);
+    float2 w1_Min = float2(0.010, 0.16);
     float2 w1_Max = w1_Min + float2(0.20, 0.15);
 
-    float2 w2_Min = float2(0.104, w1_Max.y + 0.02); 
+    float2 w2_Min = float2(0.010, w1_Max.y + 0.02); 
     float2 w2_Max = w2_Min + float2(0.20, 0.10);
 
     float uiElements = 0.0;
