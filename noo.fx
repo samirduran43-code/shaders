@@ -26,7 +26,6 @@ sampler NoosphereSampler { Texture = NoosphereTex; };
 float Hash11(float p) { return frac(sin(p * 127.1) * 43758.5453); }
 float Hash22(float2 p) { return frac(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }
 
-// Generates an independent 2D point based on an iteration seed index
 float2 GetRandomLocation(float seed, int index)
 {
     float x = Hash11(seed + float(index) * 15.43);
@@ -58,50 +57,60 @@ float GetChar(int idx, float2 uv) {
 
 float4 PS_NoosphereWidget(float4 pos : SV_Position, float2 uv : TEXCOORD) : SV_Target {
     float tTot = Timer * 0.001;
-    
-    if (uv.x < 0.80 || uv.y < 0.80) return tex2D(NoosphereSampler, uv);
-    float2 wUV = (uv - 0.80) / 0.20;
 
     // =========================================================================
-    // MODULO-DRIVEN INDEPENDENT MULTI-SPIKE ENGINE
+    // UPPER RIGHT EXACT PIXEL-BOUND CALCULATION (1/25th Display Area)
     // =========================================================================
-    // Explicit requested modulo function tracking time loops
+    // 1/25th scale area means the width and height scalars are exactly 20% (0.20)
+    float widgetW = BUFFER_WIDTH * 0.20;
+    float widgetH = BUFFER_HEIGHT * 0.20;
+
+    // Calculate upper right boundaries accounting for the mandatory 100px margins
+    float leftPixelBound  = BUFFER_WIDTH - widgetW - 100.0;
+    float rightPixelBound = BUFFER_WIDTH - 100.0;
+    float topPixelBound   = 100.0;
+    float bottomPixelBound = 100.0 + widgetH;
+
+    // Convert pixel thresholds back into screen coordinate UV space
+    float minUV_X = leftPixelBound / BUFFER_WIDTH;
+    float maxUV_X = rightPixelBound / BUFFER_WIDTH;
+    float minUV_Y = topPixelBound / BUFFER_HEIGHT;
+    float maxUV_Y = bottomPixelBound / BUFFER_HEIGHT;
+
+    // Reject processing and pass background frames if coordinates fall outside bounding margins
+    if (uv.x < minUV_X || uv.x > maxUV_X || uv.y < minUV_Y || uv.y > maxUV_Y) 
+    {
+        return tex2D(NoosphereSampler, uv);
+    }
+
+    // Normalize local widget workspace variables cleanly between 0.0 and 1.0 inside our box
+    float2 wUV = float2((uv.x - minUV_X) / (maxUV_X - minUV_X), (uv.y - minUV_Y) / (maxUV_Y - minUV_Y));
+    // =========================================================================
+
+    // Periodic Multi-Spike Modulo Tracker Engine
     float timeRemainder = tTot % LoopInterval_A;
     float currentLoopID = floor(tTot / LoopInterval_A);
-    
-    // An independent base seed unique to this exact time block
     float loopSeed = Hash11(currentLoopID * 23.41);
-    
-    // Shockwave decay tracking: Instantly flares at 0 seconds, fades fast over 0.25 seconds
     float spikeLifeEnvelope = max(0.0, 1.0 - (timeRemainder / 0.25));
 
     float overallSpikeMask = 0.0;
     float2 coordinateTearOffset = float2(0.0, 0.0);
 
-    // Unrolled execution loop generating exactly 'n' independent random positions
     for (int i = 0; i < 8; i++)
     {
-        // Safety guard for old ReShade compilers requiring static loop limits
         if (i >= MaxSpikes_N) break;
 
-        // Fetch completely separate X, Y coordinates for this loop pass iteration
         float2 targetLoc = GetRandomLocation(loopSeed, i);
-        
-        // Calculate distance from current screen pixel to this unique spike center
         float distToSpike = length(wUV - targetLoc);
-        
-        // Render local lightning-like flares centered exactly over the random point
         float pointFlare = smoothstep(0.04, 0.001, distToSpike) * spikeLifeEnvelope;
         overallSpikeMask = max(overallSpikeMask, pointFlare);
         
-        // Generate random vector offset directions for spatial tearing relative to this point
         if (distToSpike < 0.05)
         {
             float tearDirection = Hash11(loopSeed + float(i) * 31.7);
             coordinateTearOffset += float2(tearDirection - 0.5, 0.0) * 0.03 * spikeLifeEnvelope;
         }
     }
-    // =========================================================================
 
     float2 finalSampleUV = uv + coordinateTearOffset;
     float4 bCol = tex2D(NoosphereSampler, finalSampleUV);
@@ -126,19 +135,18 @@ float4 PS_NoosphereWidget(float4 pos : SV_Position, float2 uv : TEXCOORD) : SV_T
         sMsk = 1.0;
     }
 
-    float tMsk = 0.0;
+    float textMask = 0.0;
     if (wUV.y >= 0.05 && wUV.y <= 0.15 && wUV.x >= 0.06 && wUV.x <= 0.94) {
         float tProg = (wUV.x - 0.06) / 0.88, cIdx = tProg * 9.0;
         float2 lUV = float2(frac(cIdx), (wUV.y - 0.05) / 0.10); lUV.x = (lUV.x - 0.15) / 0.70;
-        if(lUV.x >= 0.0 && lUV.x <= 1.0) tMsk = GetChar(floor(cIdx), lUV);
+        if(lUV.x >= 0.0 && lUV.x <= 1.0) textMask = GetChar(floor(cIdx), lUV);
     }
     
-    if (overallSpikeMask > 0.3 && wUV.y < 0.20) tMsk = (Hash22(wUV * tTot) > 0.5) ? 1.0 : 0.0;
+    if (overallSpikeMask > 0.3 && wUV.y < 0.20) textMask = (Hash22(wUV * tTot) > 0.5) ? 1.0 : 0.0;
 
     float3 mixO = lerp((bL * WidgetColor + eVal * WidgetColor * 1.8) * cGrid, sFB, sMsk * 0.90);
-    mixO = lerp(mixO, WidgetColor * 2.0, tMsk);
+    mixO = lerp(mixO, WidgetColor * 2.0, textMask);
     
-    // Inject the independent multi-spike bursts directly over the composited buffer
     float3 burstEnergy = float3(1.0, 1.0, 1.0) * overallSpikeMask * 2.5;
     return float4(mixO + burstEnergy, 1.0);
 }
