@@ -5,6 +5,31 @@ uniform float3 WidgetColor < ui_type = "color"; ui_label = "Data Tint"; > = floa
 uniform float ScanlineIntensity < ui_type = "slider"; ui_min = 0.0; ui_max = 1.0; ui_label = "Line Opacity"; > = 0.25;
 uniform float DeformationAmount < ui_type = "slider"; ui_min = 0.0; ui_max = 0.5; ui_label = "Instability"; > = 0.15;
 
+// Dynamic Position Configuration Sliders
+uniform float MarginX_Px <
+    ui_type = "slider";
+    ui_min = 0.0; ui_max = 1000.0; ui_step = 1.0;
+    ui_label = "Horizontal Margin (Pixels)";
+> = 100.0;
+
+uniform float MarginY_Px <
+    ui_type = "slider";
+    ui_min = 0.0; ui_max = 1000.0; ui_step = 1.0;
+    ui_label = "Vertical Margin (Pixels)";
+> = 100.0;
+
+uniform int HorizontalAnchor <
+    ui_type = "combo";
+    ui_items = "Left Edge\0Right Edge\0";
+    ui_label = "Horizontal Alignment Anchor";
+> = 1; // Default to Right Edge
+
+uniform int VerticalAnchor <
+    ui_type = "combo";
+    ui_items = "Top Edge\0Bottom Edge\0";
+    ui_label = "Vertical Alignment Anchor";
+> = 0; // Default to Top Edge
+
 uniform float LoopInterval_A <
     ui_type = "slider";
     ui_min = 0.5; ui_max = 5.0;
@@ -58,34 +83,49 @@ float GetChar(int idx, float2 uv) {
 float4 PS_NoosphereWidget(float4 pos : SV_Position, float2 uv : TEXCOORD) : SV_Target {
     float tTot = Timer * 0.001;
 
-    // =========================================================================
-    // UPPER RIGHT EXACT PIXEL-BOUND CALCULATION (1/25th Display Area)
-    // =========================================================================
-    // 1/25th scale area means the width and height scalars are exactly 20% (0.20)
+    // Fixed 1/25th resolution dimensions
     float widgetW = BUFFER_WIDTH * 0.20;
     float widgetH = BUFFER_HEIGHT * 0.20;
 
-    // Calculate upper right boundaries accounting for the mandatory 100px margins
-    float leftPixelBound  = BUFFER_WIDTH - widgetW - 100.0;
-    float rightPixelBound = BUFFER_WIDTH - 100.0;
-    float topPixelBound   = 100.0;
-    float bottomPixelBound = 100.0 + widgetH;
+    // Procedural layout logic mapping coordinate parameters to slider values
+    float leftPixelBound = 0.0;
+    float topPixelBound = 0.0;
 
-    // Convert pixel thresholds back into screen coordinate UV space
+    // Handle Horizontal Alignment Mapping
+    if (HorizontalAnchor == 0) // Left Edge
+    {
+        leftPixelBound = MarginX_Px;
+    }
+    else // Right Edge
+    {
+        leftPixelBound = BUFFER_WIDTH - widgetW - MarginX_Px;
+    }
+
+    // Handle Vertical Alignment Mapping
+    if (VerticalAnchor == 0) // Top Edge
+    {
+        topPixelBound = MarginY_Px;
+    }
+    else // Bottom Edge
+    {
+        topPixelBound = BUFFER_HEIGHT - widgetH - MarginY_Px;
+    }
+
+    float rightPixelBound = leftPixelBound + widgetW;
+    float bottomPixelBound = topPixelBound + widgetH;
+
+    // Coordinate verification conversion into normalized workspace properties
     float minUV_X = leftPixelBound / BUFFER_WIDTH;
     float maxUV_X = rightPixelBound / BUFFER_WIDTH;
     float minUV_Y = topPixelBound / BUFFER_HEIGHT;
     float maxUV_Y = bottomPixelBound / BUFFER_HEIGHT;
 
-    // Reject processing and pass background frames if coordinates fall outside bounding margins
     if (uv.x < minUV_X || uv.x > maxUV_X || uv.y < minUV_Y || uv.y > maxUV_Y) 
     {
         return tex2D(NoosphereSampler, uv);
     }
 
-    // Normalize local widget workspace variables cleanly between 0.0 and 1.0 inside our box
     float2 wUV = float2((uv.x - minUV_X) / (maxUV_X - minUV_X), (uv.y - minUV_Y) / (maxUV_Y - minUV_Y));
-    // =========================================================================
 
     // Periodic Multi-Spike Modulo Tracker Engine
     float timeRemainder = tTot % LoopInterval_A;
