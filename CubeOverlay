@@ -1,0 +1,193 @@
+#include "ReShade.fxh"
+
+// --- Global BackBuffer Texture & Sampler Declaration ---
+texture ReShade_BackBufferTex : COLOR;
+sampler2D ReShade_BackBuffer {
+    Texture = ReShade_BackBufferTex;
+};
+
+// --- UI Controls ---
+uniform float UniformTime < source = "timer"; >;
+
+uniform float3 CubeColor <
+    ui_type = "color";
+    ui_label = "Base Cube Color";
+> = float3(0.0, 1.0, 0.4);
+
+uniform float3 HighlightColor <
+    ui_type = "color";
+    ui_label = "Active Side Color";
+> = float3(1.0, 0.0, 0.33);
+
+uniform float CubeScale <
+    ui_type = "drag";
+    ui_min = 0.1; ui_max = 2.0;
+    ui_label = "Cube Size";
+> = 0.6;
+
+uniform float RotationSpeed <
+    ui_type = "drag";
+    ui_min = 0.0; ui_max = 5.0;
+    ui_label = "Rotation Speed";
+> = 1.0;
+
+// --- Helper Math: Distance from a Pixel to a 2D Line Segment ---
+float distToSegment(float2 p, float2 a, float2 b)
+{
+    float2 pa = p - a, ba = b - a;
+    float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    return length(pa - ba * h);
+}
+
+// --- Pseudo-Random Generator for Text Blocks & Edge Swap ---
+float hash(float n) { return frac(sin(n) * 43758.5453123); }
+
+// --- Character Map Generator for Digital Strings ---
+float drawChar(float2 uv, int charId)
+{
+    // A simplified 3x5 matrix text font compressed into single integers
+    // Maps hexadecimal-like shapes (0-9, A-F, symbols)
+    uv = floor(uv * float2(3.0, 5.0));
+    if (uv.x < 0.0 || uv.x > 2.0 || uv.y < 0.0 || uv.y > 4.0) return 0.0;
+    int bit = int(uv.x + uv.y * 3.0);
+    
+    // FIX: Explicit array sizing and type initialization declaration
+    int font[6] = { 31599, 9362, 29671, 29347, 23497, 31183 }; 
+    return float((font[charId % 6] >> bit) & 1);
+}
+
+// --- Main Fragment Shader ---
+float4 PS_CubeOverlay(float4 vpos : SV_Position, float2 texcoord : TEXCOORD) : SV_Target
+{
+    // 1. Grab the clean background scene behind the overlay
+    float4 finalColor = tex2D(ReShade_BackBuffer, texcoord);
+    
+    // Normalize coordinates to compensate for screen aspect ratio
+    float2 uv = texcoord;
+    float aspect = BUFFER_WIDTH * BUFFER_RCP_HEIGHT;
+    uv.x *= aspect;
+
+    // Anchor the cube to the lower right corner (with safe margin layout padding)
+    float2 center = float2((1.0 * aspect) - 0.15, 0.85); 
+
+    float timeSec = UniformTime * 0.001; // Convert ms timer to seconds
+    float animTime = timeSec * RotationSpeed;
+
+    // FIX: Explicitly sizing and declaring the structural edge arrays
+    int edgeA[12] = {0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3};
+    int edgeB[12] = {1, 2, 3, 0, 5, 6, 7, 4, 4, 5, 6, 7};
+
+    // 3. Dynamic Side Switcher Logic (Every 3 seconds)
+    float timeBlock = floor(timeSec / 3.0);
+    int activeSide1 = int(frac(sin(timeBlock) * 43758.5453) * 12.0) % 12;
+    int activeSide2 = int(frac(sin(timeBlock + 15.3) * 43758.5453) * 12.0) % 12;
+    if (activeSide1 == activeSide2) activeSide2 = (activeSide1 + 1) % 12;
+
+    // 4. Set up 8 Cube Corners in 3D Coordinate Space
+    float3 vertices[8] = {
+        float3(-1, -1, -1), float3(1, -1, -1), float3(1, 1, -1), float3(-1, 1, -1),
+        float3(-1, -1,  1), float3(1, -1,  1), float3(1, 1,  1), float3(-1, 1,  1)
+    };
+
+    // Rotational Matrix Calculations
+    float sX = sin(animTime * 0.4); float cX = cos(animTime * 0.4);
+    float sY = sin(animTime * 0.6); float cY = cos(animTime * 0.6);
+
+    // Apply scale oscillation pulsing matching your HTML version
+    float pulse = 1.0 + sin(timeSec * 2.0) * 0.05;
+    // Adjusted base scale multiplier (0.10) keeps corner positions from clipping
+    float currentScale = CubeScale * 0.10 * pulse; 
+
+    // Fixed sized array allocated locally to avoid L-value parameter errors
+    float2 projected[8]; 
+    
+    for (int i = 0; i < 8; i++)
+    {
+        float3 v = vertices[i];
+        
+        // Rotate local coordinate space (X-axis & Y-axis)
+        float3 r;
+        r.y = v.y * cX - v.z * sX;
+        float z1 = v.y * sX + v.z * cX;
+        r.x = v.x * cY + z1 * sY;
+        r.z = -v.x * sY + z1 * cY;
+
+        // Simple perspective translation matrix 
+        float distance = 3.0;
+        float perspective = distance / (distance - r.z);
+        
+        projected[i] = center + r.xy * perspective * currentScale;
+    }
+
+    // 5. Draw the 12 Edges directly on screen pixels
+    float3 lineLayer = float3(0.0, 0.0, 0.0);
+
+    for (int e = 0; e < 12; e++)
+    {
+        float2 pA = projected[edgeA[e]];
+        float2 pB = projected[edgeB[e]];
+        
+        float d = distToSegment(uv, pA, pB);
+
+        // Core line geometry definition
+        if (e == activeSide1 || e == activeSide2)
+        {
+            // Neon Active Highlight Line Mask
+            float currentLine = smoothstep(0.006, 0.001, d);
+            float currentGlow = smoothstep(0.04, 0.0, d) * 0.4;
+            lineLayer = max(lineLayer, (currentLine + currentGlow) * HighlightColor);
+        }
+        else
+        {
+            // Standard Structural Green Line Mask
+            float currentLine = smoothstep(0.003, 0.0, d);
+            float currentGlow = smoothstep(0.02, 0.0, d) * 0.2;
+            lineLayer = max(lineLayer, (currentLine + currentGlow) * CubeColor);
+        }
+    }
+    
+    // Merge framework onto the current display color output
+    finalColor.rgb = max(finalColor.rgb, lineLayer);
+
+    // 6. Draw Floating Oscillating Matrix Telemetry Strings
+    float2 drift = float2(sin(timeSec * 1.5), cos(timeSec * 2.0)) * 0.015;
+    
+    // Define three anchor positions across screen space
+    float2 textPos[3];
+    textPos[0] = float2(0.08 * aspect, 0.15) + drift;                 // Stream Left
+    textPos[1] = float2(0.82 * aspect, 0.20) - float2(drift.y, drift.x); // Stream Right
+    textPos[2] = float2(0.42 * aspect, 0.85) + float2(drift.x * 0.5, 0.0); // Stream Bottom
+
+    float textMask = 0.0;
+
+    for (int t = 0; t < 3; t++)
+    {
+        // Scale and crop matrix workspace limits for letters
+        float2 textUV = (uv - textPos[t]) * 120.0;
+        if (textUV.y > 0.0 && textUV.y < 5.0 && textUV.x > 0.0 && textUV.x < 35.0)
+        {
+            int col = int(textUV.x / 4.0);
+            float2 charUV = float2(frac(textUV.x / 4.0) * 4.0, textUV.y);
+            
+            // Randomize character values generated along columns based on current clock intervals
+            int seedId = int(hash(float(col) + floor(timeSec * 8.0)) * 16.0);
+            textMask = max(textMask, drawChar(charUV, seedId));
+        }
+    }
+
+    // Blend glowing telemetry font mask into outputs using standard green profiles
+    float3 textGlowColor = CubeColor * textMask * 0.8;
+    finalColor.rgb = max(finalColor.rgb, textGlowColor);
+
+    return float4(finalColor.rgb, 1.0);
+}
+
+// --- ReShade Technical Pipeline Hooks ---
+technique CubeOverlay
+{
+    pass
+    {
+        VertexShader = PostProcessVS;
+        PixelShader = PS_CubeOverlay;
+    }
+}
