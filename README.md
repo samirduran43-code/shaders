@@ -26,9 +26,11 @@ Notes
 These shaders are provided as-is.
 Make sure both files are kept together if CRTMASK depends on functionality from helper.
 Files Included
-CRTMASK
-helper
 
+---
+GripScanlineCRT.fx
+gripassist.fx
+---
 
 
 ---
