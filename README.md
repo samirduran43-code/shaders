@@ -2,6 +2,35 @@
 
 A high-performance collection of post-processing shaders for ReShade that rewrite game rendering pipelines in real-time without hurting frame rates.
 
+
+
+GRIP Combat Racing — Shaders
+Overview
+
+Added custom shaders for GRIP: Combat Racing.
+
+These files are intended to provide shader-related functionality and effects for the game.
+
+Files
+CRTMASK
+CRT mask shader.
+Handles the CRT-style visual masking effect.
+helper
+Helper shader file.
+Provides supporting functionality used by the shader setup.
+Installation
+Download or clone the repository.
+Place the shader files in the appropriate shader/mod directory.
+Launch GRIP: Combat Racing and verify the effects are working.
+Notes
+These shaders are provided as-is.
+Make sure both files are kept together if CRTMASK depends on functionality from helper.
+Files Included
+CRTMASK
+helper
+
+
+
 ---
 
 ## 🔥 Key Features
